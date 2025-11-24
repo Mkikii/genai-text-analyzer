@@ -102,13 +102,14 @@ def get_cached_result(key: str):
     cache_stats["misses"] += 1
     return None
 
-def set_cached_result(key: str, result: dict, expire: int = 3600):  # 1 hour expiration
-    """Set result in Redis cache"""
+def set_cached_result(key: str, result: dict):
+    """Set result in Redis cache - no expiration"""
     if not redis_client:
         return
     
     try:
-        redis_client.setex(key, expire, pickle.dumps(result))
+        # Cache forever (or until manually cleared or Redis restarts)
+        redis_client.set(key, pickle.dumps(result))
         logger.info(f"Cached result for key: {key}")
     except Exception as e:
         logger.warning(f"Cache write error: {e}")
@@ -234,7 +235,7 @@ async def analyze_text(request: Request, text_request: TextRequest):
             "cached": False
         }
         
-        # Cache the result
+        # Cache the result (no expiration)
         set_cached_result(cache_key, result_data)
         
         return AnalysisResponse(**result_data)

@@ -16,8 +16,8 @@ app = FastAPI(
 )
 
 # Get API key from environment variable
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+GENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GENAI_URL = "https://api.openai.com/v1/chat/completions"
 
 # Request and Response models
 class TextRequest(BaseModel):
@@ -56,7 +56,7 @@ async def analyze_text(request: TextRequest):
             detail="Text must be at least 10 characters long"
         )
     
-    if not OPENAI_API_KEY:
+    if not GENAI_API_KEY:
         raise HTTPException(
             status_code=500, 
             detail="API key not configured. Please set OPENAI_API_KEY in environment variables."
@@ -74,10 +74,17 @@ async def analyze_text(request: TextRequest):
         Text: {request.text}
 
         Respond with valid JSON only, no other text.
+        Example format:
+        {{
+            "sentiment": "positive",
+            "key_phrases": ["phrase1", "phrase2", "phrase3"],
+            "summary": "Brief summary here",
+            "confidence": 0.95
+        }}
         """
 
         headers = {
-            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Authorization": f"Bearer {GENAI_API_KEY}",
             "Content-Type": "application/json"
         }
         
@@ -88,16 +95,12 @@ async def analyze_text(request: TextRequest):
             "max_tokens": 500
         }
 
-        response = requests.post(OPENAI_URL, json=data, headers=headers)
+        response = requests.post(GENAI_URL, json=data, headers=headers)
         response.raise_for_status()
         
         ai_content = response.json()['choices'][0]['message']['content'].strip()
         
-        # Clean the response and parse JSON
-        # Sometimes AI adds backticks or other markers
-        if "```json" in ai_content:
-            ai_content = ai_content.replace("```json", "").replace("```", "")
-        
+        # Parse the JSON response from AI
         analysis_result = json.loads(ai_content)
         
         return AnalysisResponse(
@@ -116,7 +119,7 @@ async def analyze_text(request: TextRequest):
     except json.JSONDecodeError as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error parsing AI response: {str(e)}. Raw response: {ai_content}"
+            detail=f"Error parsing AI response: {str(e)}"
         )
     except Exception as e:
         raise HTTPException(
@@ -124,7 +127,6 @@ async def analyze_text(request: TextRequest):
             detail=f"Unexpected error: {str(e)}"
         )
 
-# For local development
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

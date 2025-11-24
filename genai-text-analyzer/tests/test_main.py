@@ -1,4 +1,10 @@
 import pytest
+import sys
+import os
+
+# Add the app directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -33,16 +39,21 @@ def test_analyze_text_too_long():
     assert response.status_code == 400
     assert "less than 1000 characters" in response.json()["detail"]
 
-def test_analyze_text_missing_api_key(monkeypatch):
+def test_analyze_text_missing_api_key():
     """Test analysis when API key is missing"""
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    # This test will work because we're not setting the API key
     response = client.post("/analyze", json={"text": "This is a test sentence for analysis."})
-    # This might return 500 or be handled differently
-    assert response.status_code in [500, 422]
+    # Should return 500 because API key is not configured
+    assert response.status_code == 500
 
 def test_docs_available():
     """Test that API documentation is available"""
     response = client.get("/docs")
     assert response.status_code == 200
 
-# Add more tests as needed
+def test_analyze_endpoint_exists():
+    """Test that analyze endpoint exists in docs"""
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    openapi_spec = response.json()
+    assert "/analyze" in openapi_spec["paths"]

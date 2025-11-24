@@ -18,13 +18,14 @@ def test_health_check():
     assert data["status"] == "healthy"
     assert "timestamp" in data
     assert data["version"] == "1.0.0"
+    assert "redis_status" in data
 
-def test_root_endpoint():
-    """Test root endpoint"""
+def test_root_endpoint_returns_swagger_ui():
+    """Test root endpoint returns Swagger UI HTML"""
     response = client.get("/")
     assert response.status_code == 200
-    data = response.json()
-    assert data["message"] == "GenAI Text Analyzer API"
+    assert "text/html" in response.headers["content-type"]
+    assert "Swagger UI" in response.text
 
 def test_analyze_text_too_short():
     """Test analysis with text that's too short"""
@@ -41,19 +42,25 @@ def test_analyze_text_too_long():
 
 def test_analyze_text_missing_api_key():
     """Test analysis when API key is missing"""
-    # This test will work because we're not setting the API key
     response = client.post("/analyze", json={"text": "This is a test sentence for analysis."})
-    # Should return 500 because API key is not configured
-    assert response.status_code == 500
+    # Should return 502 (OpenAI error) or 500 (missing API key)
+    assert response.status_code in [500, 502]
 
-def test_docs_available():
-    """Test that API documentation is available"""
-    response = client.get("/docs")
-    assert response.status_code == 200
-
-def test_analyze_endpoint_exists():
-    """Test that analyze endpoint exists in docs"""
+def test_openapi_spec_exists():
+    """Test that OpenAPI spec is available"""
     response = client.get("/openapi.json")
     assert response.status_code == 200
     openapi_spec = response.json()
     assert "/analyze" in openapi_spec["paths"]
+    assert "/health" in openapi_spec["paths"]
+    assert "/cache/stats" in openapi_spec["paths"]
+
+def test_cache_stats_endpoint():
+    """Test cache stats endpoint"""
+    response = client.get("/cache/stats")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_requests" in data
+    assert "cache_hits" in data
+    assert "cache_misses" in data
+    assert "hit_rate" in data

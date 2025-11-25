@@ -107,20 +107,25 @@ def get_cached_result(key: str):
         cached = redis_client.get(key)
         if cached:
             cache_stats["hits"] += 1
-            return pickle.loads(cached)
+            result = pickle.loads(cached)
+            # Set cached to True when retrieving from cache
+            result["cached"] = True
+            return result
     except Exception as e:
         logger.warning(f"Cache read error: {e}")
     cache_stats["misses"] += 1
     return None
 
 def set_cached_result(key: str, result: dict):
-    """Set result in Redis cache - no expiration"""
+    """Set result in Redis cache"""
     if not redis_client:
         return
     
     try:
-        # Cache forever (or until manually cleared or Redis restarts)
-        redis_client.set(key, pickle.dumps(result))
+        # Store with cached=False for new results
+        result_to_store = result.copy()
+        result_to_store["cached"] = False
+        redis_client.set(key, pickle.dumps(result_to_store))
         logger.info(f"Cached result for key: {key}")
     except Exception as e:
         logger.warning(f"Cache write error: {e}")

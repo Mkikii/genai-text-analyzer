@@ -40,16 +40,27 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Redis configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-try:
-    redis_client = redis.Redis.from_url(REDIS_URL, decode_responses=False)
-    # Test Redis connection
-    redis_client.ping()
-    logger.info("✅ Redis connected successfully")
-except redis.ConnectionError as e:
-    logger.error(f"❌ Redis connection failed: {e}")
-    redis_client = None
+# Redis configuration - try multiple connection options
+redis_client = None
+redis_connection_attempts = [
+    "redis://localhost:6379",  # Local Redis
+    "redis://redis:6379",      # Docker Redis
+    "redis://127.0.0.1:6379"   # Local IP
+]
+
+for redis_url in redis_connection_attempts:
+    try:
+        redis_client = redis.Redis.from_url(redis_url, decode_responses=False, socket_connect_timeout=2)
+        redis_client.ping()
+        logger.info(f"✅ Redis connected successfully to: {redis_url}")
+        break
+    except (redis.ConnectionError, redis.TimeoutError) as e:
+        logger.warning(f"❌ Redis connection failed to {redis_url}: {e}")
+        redis_client = None
+        continue
+
+if not redis_client:
+    logger.warning("❌ All Redis connection attempts failed. Running without Redis caching.")
 
 # Get API key from environment variable
 GENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -114,6 +125,55 @@ def set_cached_result(key: str, result: dict):
     except Exception as e:
         logger.warning(f"Cache write error: {e}")
 
+def mock_ai_analysis(text: str) -> dict:
+    """Mock AI analysis that simulates OpenAI responses without API calls"""
+    text_lower = text.lower()
+    
+    # Simple sentiment analysis based on keywords
+    positive_words = ['love', 'amazing', 'great', 'excellent', 'awesome', 'wonderful', 'fantastic', 'perfect', 'good', 'best']
+    negative_words = ['hate', 'terrible', 'awful', 'bad', 'disappointing', 'worst', 'horrible', 'dislike', 'annoying']
+    
+    positive_count = sum(1 for word in positive_words if word in text_lower)
+    negative_count = sum(1 for word in negative_words if word in text_lower)
+    
+    if positive_count > negative_count:
+        sentiment = "positive"
+        confidence = min(0.9, 0.7 + (positive_count * 0.05))
+    elif negative_count > positive_count:
+        sentiment = "negative"
+        confidence = min(0.9, 0.7 + (negative_count * 0.05))
+    else:
+        sentiment = "neutral"
+        confidence = 0.7
+    
+    # Generate mock key phrases (most frequent words excluding common words)
+    common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+    words = [word.lower() for word in text.split() if len(word) > 3 and word.lower() not in common_words]
+    
+    # Get top 3 unique words as key phrases
+    from collections import Counter
+    word_freq = Counter(words)
+    key_phrases = [word for word, _ in word_freq.most_common(3)]
+    
+    # If not enough unique words, add some defaults
+    while len(key_phrases) < 3:
+        key_phrases.append(f"topic{len(key_phrases) + 1}")
+    
+    # Generate mock summary based on sentiment and key phrases
+    if sentiment == "positive":
+        summary = f"This text expresses positive sentiment about {', '.join(key_phrases[:2])} with enthusiasm."
+    elif sentiment == "negative":
+        summary = f"This text expresses negative views regarding {', '.join(key_phrases[:2])} with criticism."
+    else:
+        summary = f"This text discusses {', '.join(key_phrases[:2])} in a neutral manner."
+    
+    return {
+        "sentiment": sentiment,
+        "key_phrases": key_phrases[:3],
+        "summary": summary,
+        "confidence": round(confidence, 2)
+    }
+
 @app.get("/health", response_model=HealthResponse)
 @limiter.limit("30/minute")
 async def health_check(request: Request):
@@ -164,13 +224,6 @@ async def analyze_text(request: Request, text_request: TextRequest):
             status_code=400, 
             detail="Text must be less than 1000 characters"
         )
-    
-    if not GENAI_API_KEY:
-        logger.error("OpenAI API key not configured")
-        raise HTTPException(
-            status_code=500, 
-            detail="API key not configured. Please set OPENAI_API_KEY in environment variables."
-        )
 
     logger.info(f"Analyzing text from IP: {request.client.host}, length: {len(text_request.text)}")
 
@@ -180,84 +233,85 @@ async def analyze_text(request: Request, text_request: TextRequest):
     
     if cached_result:
         logger.info(f"Cache hit for text analysis")
-        return AnalysisResponse(**cached_result, cached=True)
+        return AnalysisResponse(**cached_result)
 
-    try:
-        # Craft a detailed prompt for comprehensive analysis
-        prompt = f"""
-        Analyze the following text and provide a JSON response with exactly these fields:
-        - "sentiment": one of "positive", "negative", or "neutral"
-        - "key_phrases": array of exactly 3 most important phrases or keywords
-        - "summary": a one-sentence summary of the text
-        - "confidence": a number between 0 and 1 indicating analysis confidence
+    # Use mock analysis if no API key, otherwise use real OpenAI
+    if not GENAI_API_KEY:
+        logger.info("No API key found, using mock analysis")
+        analysis_result = mock_ai_analysis(text_request.text.strip())
+        model_used = "mock-gpt-3.5-turbo"
+    else:
+        try:
+            # Craft a detailed prompt for comprehensive analysis
+            prompt = f"""
+            Analyze the following text and provide a JSON response with exactly these fields:
+            - "sentiment": one of "positive", "negative", or "neutral"
+            - "key_phrases": array of exactly 3 most important phrases or keywords
+            - "summary": a one-sentence summary of the text
+            - "confidence": a number between 0 and 1 indicating analysis confidence
 
-        Text: {text_request.text}
+            Text: {text_request.text}
 
-        Respond with valid JSON only, no other text.
-        Example format:
-        {{
-            "sentiment": "positive",
-            "key_phrases": ["phrase1", "phrase2", "phrase3"],
-            "summary": "Brief summary here",
-            "confidence": 0.95
-        }}
-        """
+            Respond with valid JSON only, no other text.
+            Example format:
+            {{
+                "sentiment": "positive",
+                "key_phrases": ["phrase1", "phrase2", "phrase3"],
+                "summary": "Brief summary here",
+                "confidence": 0.95
+            }}
+            """
 
-        headers = {
-            "Authorization": f"Bearer {GENAI_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.1,
-            "max_tokens": 500
-        }
+            headers = {
+                "Authorization": f"Bearer {GENAI_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 500
+            }
 
-        response = requests.post(GENAI_URL, json=data, headers=headers)
-        response.raise_for_status()
-        
-        ai_content = response.json()['choices'][0]['message']['content'].strip()
-        
-        # Parse the JSON response from AI
-        analysis_result = json.loads(ai_content)
-        
-        logger.info(f"Successfully analyzed text. Sentiment: {analysis_result.get('sentiment')}")
-        
-        # Prepare response data
-        result_data = {
-            "sentiment": analysis_result.get("sentiment", "neutral"),
-            "key_phrases": analysis_result.get("key_phrases", []),
-            "summary": analysis_result.get("summary", ""),
-            "confidence": analysis_result.get("confidence", 0.5),
-            "model_used": "gpt-3.5-turbo",
-            "cached": False
-        }
-        
-        # Cache the result (no expiration)
-        set_cached_result(cache_key, result_data)
-        
-        return AnalysisResponse(**result_data)
+            response = requests.post(GENAI_URL, json=data, headers=headers)
+            response.raise_for_status()
+            
+            ai_content = response.json()['choices'][0]['message']['content'].strip()
+            
+            # Parse the JSON response from AI
+            analysis_result = json.loads(ai_content)
+            model_used = "gpt-3.5-turbo"
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"OpenAI API error: {str(e)}, falling back to mock analysis")
+            analysis_result = mock_ai_analysis(text_request.text.strip())
+            model_used = "mock-gpt-3.5-turbo (fallback)"
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error: {str(e)}, falling back to mock analysis")
+            analysis_result = mock_ai_analysis(text_request.text.strip())
+            model_used = "mock-gpt-3.5-turbo (fallback)"
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}, falling back to mock analysis")
+            analysis_result = mock_ai_analysis(text_request.text.strip())
+            model_used = "mock-gpt-3.5-turbo (fallback)"
 
-    except requests.exceptions.RequestException as e:
-        logger.error(f"OpenAI API error: {str(e)}")
-        raise HTTPException(
-            status_code=502,
-            detail=f"Error calling AI service: {str(e)}"
-        )
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parsing error: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error parsing AI response: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error: {str(e)}"
-        )
+    logger.info(f"Successfully analyzed text. Sentiment: {analysis_result.get('sentiment')}")
+    
+    # Prepare response data
+    result_data = {
+        "sentiment": analysis_result.get("sentiment", "neutral"),
+        "key_phrases": analysis_result.get("key_phrases", []),
+        "summary": analysis_result.get("summary", ""),
+        "confidence": analysis_result.get("confidence", 0.5),
+        "model_used": model_used,
+        "cached": False
+    }
+    
+    # Cache the result (no expiration)
+    set_cached_result(cache_key, result_data)
+    
+    return AnalysisResponse(**result_data)
 
 @app.delete("/cache/clear")
 @limiter.limit("5/minute")
@@ -282,11 +336,13 @@ async def clear_cache(request: Request):
 async def root(request: Request):
     """Root endpoint with API information"""
     redis_status = "connected" if redis_client and redis_client.ping() else "disconnected"
+    api_mode = "Mock Mode" if not GENAI_API_KEY else "OpenAI Mode"
     
     return {
-        "message": "GenAI Text Analyzer API with Redis Caching",
+        "message": f"GenAI Text Analyzer API with Redis Caching ({api_mode})",
         "version": "1.0.0",
         "redis_status": redis_status,
+        "api_mode": api_mode,
         "endpoints": {
             "docs": "/docs",
             "health": "/health",

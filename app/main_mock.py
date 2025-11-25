@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
-    title="GenAI Text Analyzer API - Mock Version",
-    description="Mock API with Redis caching for testing without OpenAI",
+    title="GenAI Text Analyzer API (Mock Mode)",
+    description="Mock version for testing without real API keys",
     version="1.0.0",
     docs_url="/"
 )
@@ -91,35 +91,36 @@ def set_cached_result(key: str, result: dict, expire: int = 3600):
         return
     try:
         redis_client.setex(key, expire, pickle.dumps(result))
-        logger.info(f"Cached result for key: {key}")
     except Exception as e:
         logger.warning(f"Cache write error: {e}")
 
-def analyze_text_mock(text: str) -> dict:
-    """Mock analysis that simulates OpenAI response"""
+def mock_ai_analysis(text: str) -> dict:
+    """Mock AI analysis that simulates OpenAI responses"""
     # Simple sentiment analysis based on keywords
     text_lower = text.lower()
-    if any(word in text_lower for word in ['love', 'great', 'amazing', 'happy', 'excellent']):
+    
+    if any(word in text_lower for word in ['love', 'amazing', 'great', 'excellent', 'awesome']):
         sentiment = "positive"
-    elif any(word in text_lower for word in ['hate', 'terrible', 'awful', 'sad', 'bad']):
-        sentiment = "negative"
+        confidence = 0.9
+    elif any(word in text_lower for word in ['hate', 'terrible', 'awful', 'bad', 'disappointing']):
+        sentiment = "negative" 
+        confidence = 0.8
     else:
         sentiment = "neutral"
+        confidence = 0.7
     
-    # Extract first few words as key phrases
-    words = text.split()[:3]
-    key_phrases = [f"mock_{word}" for word in words if len(word) > 3]
+    # Generate mock key phrases (first 3 words)
+    words = [w for w in text.split() if len(w) > 3][:3]
+    key_phrases = words if words else ["sample", "test", "phrases"]
     
-    # Generate summary
-    summary = f"This mock analysis shows '{sentiment}' sentiment for: {text[:50]}..."
+    # Generate mock summary
+    summary = f"This text expresses {sentiment} sentiment about {key_phrases[0] if key_phrases else 'the topic'}."
     
     return {
         "sentiment": sentiment,
         "key_phrases": key_phrases,
         "summary": summary,
-        "confidence": 0.85,
-        "model_used": "mock-gpt-3.5-turbo",
-        "cached": False
+        "confidence": confidence
     }
 
 @app.get("/health", response_model=HealthResponse)
@@ -128,7 +129,7 @@ async def health_check(request: Request):
     redis_status = "connected" if redis_client and redis_client.ping() else "disconnected"
     return HealthResponse(
         status="healthy",
-        message="GenAI Text Analyzer Mock API is running successfully!",
+        message="GenAI Text Analyzer API (Mock Mode) is running successfully!",
         timestamp=datetime.datetime.utcnow().isoformat(),
         version="1.0.0",
         redis_status=redis_status
@@ -156,7 +157,7 @@ async def analyze_text(request: Request, text_request: TextRequest):
     if len(text_request.text.strip()) > 1000:
         raise HTTPException(status_code=400, detail="Text must be less than 1000 characters")
 
-    logger.info(f"Analyzing text from IP: {request.client.host}, length: {len(text_request.text)}")
+    logger.info(f"Analyzing text (mock mode): {text_request.text[:50]}...")
 
     # Check cache first
     cache_key = get_cache_key(text_request.text.strip())
@@ -166,8 +167,20 @@ async def analyze_text(request: Request, text_request: TextRequest):
         logger.info("Cache hit for text analysis")
         return AnalysisResponse(**cached_result, cached=True)
 
-    # Use mock analysis
-    result_data = analyze_text_mock(text_request.text.strip())
+    # Use mock AI analysis
+    analysis_result = mock_ai_analysis(text_request.text.strip())
+    
+    logger.info(f"Mock analysis complete. Sentiment: {analysis_result['sentiment']}")
+    
+    # Prepare response data
+    result_data = {
+        "sentiment": analysis_result["sentiment"],
+        "key_phrases": analysis_result["key_phrases"],
+        "summary": analysis_result["summary"],
+        "confidence": analysis_result["confidence"],
+        "model_used": "mock-gpt-3.5-turbo",
+        "cached": False
+    }
     
     # Cache the result
     set_cached_result(cache_key, result_data)
@@ -183,29 +196,10 @@ async def clear_cache(request: Request):
         keys = redis_client.keys("analysis:*")
         if keys:
             redis_client.delete(*keys)
-        logger.info(f"Cleared {len(keys)} cached items")
         return {"message": f"Cleared {len(keys)} cached items"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing cache: {e}")
 
-@app.get("/")
-@limiter.limit("30/minute")
-async def root(request: Request):
-    redis_status = "connected" if redis_client and redis_client.ping() else "disconnected"
-    return {
-        "message": "GenAI Text Analyzer Mock API with Redis Caching",
-        "version": "1.0.0",
-        "redis_status": redis_status,
-        "endpoints": {
-            "docs": "/docs",
-            "health": "/health",
-            "analyze": "/analyze",
-            "cache_stats": "/cache/stats",
-            "clear_cache": "/cache/clear"
-        },
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

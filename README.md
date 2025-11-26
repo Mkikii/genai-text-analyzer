@@ -88,7 +88,7 @@
 
 ### Option 1: Docker Compose (Recommended)
 
-```bash
+
 # 1. Clone the repository
 git clone https://github.com/Mkikii/genai-text-analyzer.git
 cd genai-text-analyzer
@@ -272,6 +272,18 @@ pytest --cov=app --cov-report=html tests/
 open htmlcov/index.html
 Test Coverage: 39% (focused on core API functionality)
 Tests Passing: 13/13 ✅
+
+## 🧪 Testing
+
+
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage report
+pytest --cov=app --cov-report=html tests/
+
+# View detailed coverage in browser
+open htmlcov/index.html
 
 ⚠️ Troubleshooting
 Common Issues

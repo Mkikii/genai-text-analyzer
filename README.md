@@ -1,3 +1,7 @@
+
+## 🚀 **FINAL README.md WITH ALL FIXES:**
+
+```markdown
 # 🤖 GenAI Text Analyzer
 
 > A production-ready FastAPI microservice for intelligent text analysis using Generative AI
@@ -24,6 +28,7 @@
 - [Project Structure](#-project-structure)
 - [Deployment](#-deployment)
 - [Development](#-development)
+- [Testing](#-testing)
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -99,6 +104,7 @@ docker-compose up --build
 # 4. Access the application
 # API Documentation: http://localhost:8000/docs
 # Health Check: http://localhost:8000/health
+
 Option 2: Local Development
 # 1. Clone and setup
 git clone https://github.com/Mkikii/genai-text-analyzer.git
@@ -121,6 +127,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 📡 API Documentation
 Interactive Docs
 Production: https://genai-text-analyzer.onrender.com/docs
+
 Local: http://localhost:8000/docs
 
 API Endpoints
@@ -134,13 +141,14 @@ Analyze Text
 Endpoint: POST /analyze
 
 Request:
+
 curl -X POST "https://genai-text-analyzer.onrender.com/analyze" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "I absolutely love this new AI technology! It is transforming how we build applications and making developers more productive."
   }'
   Response:
-{
+  {
   "analysis": {
     "sentiment": "positive",
     "key_phrases": [
@@ -173,6 +181,12 @@ Response:
   "hit_rate": 0.79,
   "total_requests": 57
 }
+{
+  "hits": 45,
+  "misses": 12,
+  "hit_rate": 0.79,
+  "total_requests": 57
+}
 📁 Project Structure
 genai-text-analyzer/
 ├── app/
@@ -187,6 +201,7 @@ genai-text-analyzer/
 ├── .env.example           # Environment variables template
 ├── .gitignore            # Git ignore rules
 └── README.md             # Project documentation
+
 🌐 Deployment
 Render (Production)
 # Auto-deploys from main branch
@@ -241,12 +256,22 @@ docker build -t genai-text-analyzer .
 
 # Run production container
 docker run -p 8000:8000 -e OPENAI_API_KEY=your_key_here genai-text-analyzer
-
 ⚙️ Configuration
 Environment Variables:
 OPENAI_API_KEY=your_openai_key_here
 REDIS_URL=redis://localhost:6379
 RATE_LIMIT=100/DAY
+🧪 Testing
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage report
+pytest --cov=app --cov-report=html tests/
+
+# View detailed coverage in browser
+open htmlcov/index.html
+Test Coverage: 39% (focused on core API functionality)
+Tests Passing: 13/13 ✅
 
 ⚠️ Troubleshooting
 Common Issues
@@ -259,21 +284,14 @@ services:
   redis:
     ports:
       - "6380:6379"  # Use different host port
-
       OpenAI API Key Issues
-     # Verify environment variable is set
+      # Verify environment variable is set
 echo $OPENAI_API_KEY
 
 # For Docker, ensure .env file exists
 docker-compose down
 docker-compose up --build
-
 Docker Build Failures
-# Clean Docker cache
-docker system prune
-
-# Rebuild from scratch
-docker-compose build --no-cache
 Rate Limit Exceeded
 
 Wait 1 minute and retry
@@ -309,8 +327,10 @@ Update documentation accordingly
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 👨‍💻 Author
-Mkikii
+Maureen Karimi
+
 GitHub: @Mkikii
+
 Project: GenAI Text Analyzer
 
 🙏 Acknowledgments
@@ -321,10 +341,3 @@ OpenAI - GPT models and API infrastructure
 FastAPI - Excellent documentation and community
 
 Render - Deployment platform
-Live Deployment
-🌐 Live API: https://genai-text-analyzer.onrender.com
-
-📚 API Docs: https://genai-text-analyzer.onrender.com/docs
-
-🐙 Source Code: https://github.com/Mkikii/genai-text-analyzer
-

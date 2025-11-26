@@ -41,10 +41,13 @@ def test_analyze_text_too_long():
     assert "less than 1000 characters" in response.json()["detail"]
 
 def test_analyze_text_missing_api_key():
-    """Test analysis when API key is missing"""
+    """Test analysis when API key is missing - uses mock analysis"""
     response = client.post("/analyze", json={"text": "This is a test sentence for analysis."})
-    # Should return 502 (OpenAI error) or 500 (missing API key)
-    assert response.status_code in [500, 502]
+    # Should return 200 with mock analysis when no API key
+    assert response.status_code == 200
+    data = response.json()
+    assert "sentiment" in data
+    assert "mock-gpt-3.5-turbo" in data["model_used"]
 
 def test_openapi_spec_exists():
     """Test that OpenAPI spec is available"""

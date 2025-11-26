@@ -8,6 +8,12 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## 🌟 Live Deployment
+
+- **🌐 Live API**: https://genai-text-analyzer.onrender.com
+- **📚 API Documentation**: https://genai-text-analyzer.onrender.com/docs
+- **🐙 GitHub Repository**: https://github.com/Mkikii/genai-text-analyzer
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
@@ -32,6 +38,8 @@
 - 🔑 **Key Phrase Extraction** - Identify important topics and concepts
 - 📝 **Text Summarization** - Generate concise summaries
 - 🎯 **Confidence Scoring** - Reliability metrics for analysis
+- ⚡ **Redis Caching** - Intelligent response caching for performance
+- 🛡️ **Rate Limiting** - API protection with configurable limits
 
 ## ✨ Features
 
@@ -43,12 +51,15 @@
 | RESTful API | ✅ Live | Fully documented OpenAPI/Swagger |
 | Docker Support | ✅ Live | Containerized deployment |
 | Health Monitoring | ✅ Live | Production-ready health checks |
+| Redis Caching | ✅ Live | Intelligent response caching |
+| Rate Limiting | ✅ Live | API protection layer |
 
 ## 🛠️ Technology Stack
 
 **Backend Framework**
 - **FastAPI** - Modern Python web framework with automatic API docs
 - **Uvicorn** - ASGI server for high performance
+- **Pydantic** - Data validation and settings management
 
 **AI & Machine Learning**
 - **OpenAI GPT-3.5/4** - Generative AI for text analysis
@@ -57,6 +68,8 @@
 **Infrastructure**
 - **Docker** - Containerization and deployment
 - **Docker Compose** - Multi-container orchestration
+- **Redis** - Response caching and performance
+- **Render** - Cloud deployment platform
 
 **Language**
 - **Python 3.9+** - Primary programming language
@@ -86,7 +99,6 @@ docker-compose up --build
 # 4. Access the application
 # API Documentation: http://localhost:8000/docs
 # Health Check: http://localhost:8000/health
-
 Option 2: Local Development
 # 1. Clone and setup
 git clone https://github.com/Mkikii/genai-text-analyzer.git
@@ -106,35 +118,41 @@ export OPENAI_API_KEY=your_key_here  # Linux/macOS
 
 # 5. Run the application
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
 📡 API Documentation
 Interactive Docs
-Once running, access the interactive API documentation at:
+Production: https://genai-text-analyzer.onrender.com/docs
+Local: http://localhost:8000/docs
 
-Swagger UI: http://localhost:8000/docs
-
-ReDoc: http://localhost:8000/redoc
-
+API Endpoints
+Method	Endpoint	Description
+GET	/health	Service health status
+POST	/analyze	Analyze text with AI
+GET	/cache/stats	Redis cache statistics
+DELETE	/cache/clear	Clear cache
+GET	/docs	Interactive API documentation
 Analyze Text
 Endpoint: POST /analyze
 
 Request:
-curl -X POST "http://localhost:8000/analyze" \
+curl -X POST "https://genai-text-analyzer.onrender.com/analyze" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "I absolutely love this new AI technology! It is transforming how we build applications and making developers more productive."
   }'
   Response:
-  {
-  "sentiment": "positive",
-  "key_phrases": [
-    "AI technology",
-    "transforming applications",
-    "developers productive"
-  ],
-  "summary": "The author expresses strong enthusiasm for new AI technology that is changing application development and improving developer productivity.",
-  "confidence": 0.92,
-  "model_used": "gpt-3.5-turbo"
+{
+  "analysis": {
+    "sentiment": "positive",
+    "key_phrases": [
+      "AI technology",
+      "transforming applications", 
+      "developers productive"
+    ],
+    "summary": "The author expresses strong enthusiasm for new AI technology that is changing application development and improving developer productivity.",
+    "confidence": 0.92
+  },
+  "model_used": "gpt-3.5-turbo",
+  "cached": false
 }
 Health Check
 Endpoint: GET /health
@@ -145,12 +163,23 @@ Response:
   "timestamp": "2024-01-20T10:30:00Z",
   "version": "1.0.0"
 }
+Cache Statistics
+Endpoint: GET /cache/stats
+
+Response:
+{
+  "hits": 45,
+  "misses": 12,
+  "hit_rate": 0.79,
+  "total_requests": 57
+}
 📁 Project Structure
 genai-text-analyzer/
 ├── app/
 │   ├── main.py              # FastAPI application entry point
 │   ├── models.py            # Pydantic models for request/response
-│   └── services.py          # OpenAI integration service
+│   ├── services.py          # OpenAI integration service
+│   └── cache.py             # Redis caching layer
 ├── tests/                   # Test suite
 ├── Dockerfile              # Container configuration
 ├── docker-compose.yml      # Multi-service orchestration
@@ -159,6 +188,9 @@ genai-text-analyzer/
 ├── .gitignore            # Git ignore rules
 └── README.md             # Project documentation
 🌐 Deployment
+Render (Production)
+# Auto-deploys from main branch
+# Live at: https://genai-text-analyzer.onrender.com
 Railway Deployment
 Fork this repository
 
@@ -182,18 +214,17 @@ Connect your GitHub repository
 Add environment variable: OPENAI_API_KEY
 
 Deploy the service
+
 🛠️ Development
 Running Tests
 # Run the test suite
-pytest tests/
+pytest tests/ -v
 
 # Run with coverage report
 pytest --cov=app tests/
-# Run the test suite
-pytest tests/
 
-# Run with coverage report
-pytest --cov=app tests/
+# Run specific test file
+pytest tests/test_api.py -v
 Code Quality
 # Format code
 black app/ tests/
@@ -203,12 +234,20 @@ flake8 app/ tests/
 
 # Type checking
 mypy app/
+
 Building for Production
 # Build Docker image
 docker build -t genai-text-analyzer .
 
 # Run production container
 docker run -p 8000:8000 -e OPENAI_API_KEY=your_key_here genai-text-analyzer
+
+⚙️ Configuration
+Environment Variables:
+OPENAI_API_KEY=your_openai_key_here
+REDIS_URL=redis://localhost:6379
+RATE_LIMIT=100/DAY
+
 ⚠️ Troubleshooting
 Common Issues
 Port 6379 Already in Use
@@ -220,13 +259,15 @@ services:
   redis:
     ports:
       - "6380:6379"  # Use different host port
-  OpenAI API Key Issues
-  # Verify environment variable is set
+
+      OpenAI API Key Issues
+     # Verify environment variable is set
 echo $OPENAI_API_KEY
 
 # For Docker, ensure .env file exists
 docker-compose down
-docker-compose up --build    
+docker-compose up --build
+
 Docker Build Failures
 # Clean Docker cache
 docker system prune
@@ -234,6 +275,7 @@ docker system prune
 # Rebuild from scratch
 docker-compose build --no-cache
 Rate Limit Exceeded
+
 Wait 1 minute and retry
 
 Implement exponential backoff in your client
@@ -268,9 +310,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 👨‍💻 Author
 Mkikii
-
 GitHub: @Mkikii
-
 Project: GenAI Text Analyzer
 
 🙏 Acknowledgments
@@ -280,17 +320,11 @@ OpenAI - GPT models and API infrastructure
 
 FastAPI - Excellent documentation and community
 
-🎓 Learning Outcomes
-This project demonstrates:
+Render - Deployment platform
+Live Deployment
+🌐 Live API: https://genai-text-analyzer.onrender.com
 
-✅ Modern API development with FastAPI
+📚 API Docs: https://genai-text-analyzer.onrender.com/docs
 
-✅ Generative AI integration patterns
+🐙 Source Code: https://github.com/Mkikii/genai-text-analyzer
 
-✅ Docker containerization best practices
-
-✅ Production deployment strategies
-
-✅ Comprehensive documentation standards
-
-⭐ If this project helps you, please consider giving it a star on GitHub!

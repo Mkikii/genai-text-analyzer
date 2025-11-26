@@ -1,6 +1,6 @@
 # 🤖 GenAI Text Analyzer
 
-# 🤖 GenAI Text Analyzer
+
 
  A production-ready FastAPI microservice for intelligent text analysis using Generative AI
 

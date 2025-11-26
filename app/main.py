@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import os
 import requests
 import json
@@ -68,9 +68,11 @@ GENAI_URL = "https://api.openai.com/v1/chat/completions"
 
 # Request and Response models
 class TextRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     text: str
 
 class AnalysisResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     sentiment: str
     key_phrases: list
     summary: str
@@ -79,6 +81,7 @@ class AnalysisResponse(BaseModel):
     cached: bool = False
 
 class HealthResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     status: str
     message: str
     timestamp: str
@@ -86,6 +89,7 @@ class HealthResponse(BaseModel):
     redis_status: str
 
 class CacheStatsResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     total_requests: int
     cache_hits: int
     cache_misses: int

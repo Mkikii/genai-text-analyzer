@@ -1,354 +1,264 @@
-# 🤖 GenAI Text Analyzer
+# GenAI Text Analyzer 🤖
 
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 
-
- A production-ready FastAPI microservice for intelligent text analysis using Generative AI
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-API-412991?style=flat&logo=openai)](https://openai.com/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://www.docker.com/)
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-## 🌟 Live Deployment
-
-- **🌐 Live API**: https://genai-text-analyzer.onrender.com
-- **📚 API Documentation**: https://genai-text-analyzer.onrender.com/docs
-- **🐙 GitHub Repository**: https://github.com/Mkikii/genai-text-analyzer
-
-## 📋 Table of Contents
-
-- [Overview](#-overview)
-- [Features](#-features)
-- [Technology Stack](#-technology-stack)
-- [Quick Start](#-quick-start)
-- [API Documentation](#-api-documentation)
-- [Project Structure](#-project-structure)
-- [Deployment](#-deployment)
-- [Development](#-development)
-- [Testing](#-testing)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
-
-## 🎯 Overview
-
-**GenAI Text Analyzer** is a FastAPI microservice that leverages OpenAI's GPT models to provide intelligent text analysis capabilities. Built as part of the Moringa AI Capstone, this project demonstrates modern API development with GenAI integration.
-
-### Key Capabilities
-
-- 📊 **Sentiment Analysis** - Detect emotional tone in text
-- 🔑 **Key Phrase Extraction** - Identify important topics and concepts
-- 📝 **Text Summarization** - Generate concise summaries
-- 🎯 **Confidence Scoring** - Reliability metrics for analysis
-- ⚡ **Redis Caching** - Intelligent response caching for performance
-- 🛡️ **Rate Limiting** - API protection with configurable limits
+A production-ready FastAPI microservice that leverages OpenAI's Generative AI for intelligent text analysis. Built as part of Moringa School's AI Capstone Project.
 
 ## ✨ Features
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Sentiment Analysis | ✅ Live | Positive/Negative/Neutral classification |
-| Key Phrase Extraction | ✅ Live | Automatic topic identification |
-| Text Summarization | ✅ Live | Concise summary generation |
-| RESTful API | ✅ Live | Fully documented OpenAPI/Swagger |
-| Docker Support | ✅ Live | Containerized deployment |
-| Health Monitoring | ✅ Live | Production-ready health checks |
-| Redis Caching | ✅ Live | Intelligent response caching |
-| Rate Limiting | ✅ Live | API protection layer |
+- **Sentiment Analysis** - Detect positive, negative, or neutral sentiment in text
+- **Key Phrase Extraction** - Automatically identify the most important phrases
+- **Text Summarization** - Generate concise, accurate summaries
+- **RESTful API** - Fully documented with OpenAPI/Swagger
+- **Production Ready** - Dockerized with health checks and monitoring
+- **Easy Deployment** - Deploy to Railway, Render, or any cloud platform
 
-## 🛠️ Technology Stack
+## 📋 Prerequisites
 
-**Backend Framework**
-- **FastAPI** - Modern Python web framework with automatic API docs
-- **Uvicorn** - ASGI server for high performance
-- **Pydantic** - Data validation and settings management
-
-**AI & Machine Learning**
-- **OpenAI GPT-3.5/4** - Generative AI for text analysis
-- **OpenAI API** - RESTful API integration
-
-**Infrastructure**
-- **Docker** - Containerization and deployment
-- **Docker Compose** - Multi-container orchestration
-- **Redis** - Response caching and performance
-- **Render** - Cloud deployment platform
-
-**Language**
-- **Python 3.9+** - Primary programming language
+- Docker and Docker Compose installed
+- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 1. Clone the Repository
 
-- **Docker** & **Docker Compose**
-- **OpenAI API Key** ([Get one here](https://platform.openai.com/api-keys))
-
-### Option 1: Docker Compose (Recommended)
-
-
-# 1. Clone the repository
+```bash
 git clone https://github.com/Mkikii/genai-text-analyzer.git
 cd genai-text-analyzer
+git checkout dev
+```
 
-# 2. Create environment file
-cp .env.example .env
-# Edit .env and add your OpenAI API key:
-# OPENAI_API_KEY=sk-your-actual-key-here
+### 2. Set Up Environment Variables
 
-# 3. Build and launch
+Create a `.env` file in the project root:
+
+```bash
+echo "OPENAI_API_KEY=your_actual_api_key_here" > .env
+```
+
+### 3. Run with Docker Compose
+
+```bash
 docker-compose up --build
+```
 
-# 4. Access the application
-# API Documentation: http://localhost:8000/docs
-# Health Check: http://localhost:8000/health
+The API will be available at:
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+- **Alternative Docs**: http://localhost:8000/redoc
 
-Option 2: Local Development
-# 1. Clone and setup
-git clone https://github.com/Mkikii/genai-text-analyzer.git
-cd genai-text-analyzer
+## 📖 API Usage
 
-# 2. Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# venv\Scripts\activate  # Windows
+### Analyze Text Endpoint
 
-# 3. Install dependencies
-pip install -r requirements.txt
+**POST** `/analyze`
 
-# 4. Set environment variables
-export OPENAI_API_KEY=your_key_here  # Linux/macOS
-# set OPENAI_API_KEY=your_key_here  # Windows
+#### Request
 
-# 5. Run the application
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-📡 API Documentation
-Interactive Docs
-Production: https://genai-text-analyzer.onrender.com/docs
-
-Local: http://localhost:8000/docs
-
-API Endpoints
-Method	Endpoint	Description
-GET	/health	Service health status
-POST	/analyze	Analyze text with AI
-GET	/cache/stats	Redis cache statistics
-DELETE	/cache/clear	Clear cache
-GET	/docs	Interactive API documentation
-Analyze Text
-Endpoint: POST /analyze
-
-Request:
-
-curl -X POST "https://genai-text-analyzer.onrender.com/analyze" \
+```bash
+curl -X POST "http://localhost:8000/analyze" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "I absolutely love this new AI technology! It is transforming how we build applications and making developers more productive."
   }'
-  Response:
-  {
-  "analysis": {
-    "sentiment": "positive",
-    "key_phrases": [
-      "AI technology",
-      "transforming applications", 
-      "developers productive"
-    ],
-    "summary": "The author expresses strong enthusiasm for new AI technology that is changing application development and improving developer productivity.",
-    "confidence": 0.92
-  },
-  "model_used": "gpt-3.5-turbo",
-  "cached": false
+```
+
+#### Response
+
+```json
+{
+  "sentiment": "positive",
+  "key_phrases": [
+    "AI technology",
+    "transforming applications",
+    "developers productive"
+  ],
+  "summary": "The author expresses strong enthusiasm for new AI technology that is changing application development.",
+  "confidence": 0.92,
+  "model_used": "gpt-3.5-turbo"
 }
-Health Check
-Endpoint: GET /health
+```
+
+### Health Check Endpoint
+
+**GET** `/health`
+
+```bash
+curl http://localhost:8000/health
+```
 
 Response:
+```json
 {
   "status": "healthy",
-  "timestamp": "2024-01-20T10:30:00Z",
-  "version": "1.0.0"
+  "timestamp": "2024-01-15T10:30:00Z"
 }
-Cache Statistics
-Endpoint: GET /cache/stats
+```
 
-Response:
-{
-  "hits": 45,
-  "misses": 12,
-  "hit_rate": 0.79,
-  "total_requests": 57
-}
-{
-  "hits": 45,
-  "misses": 12,
-  "hit_rate": 0.79,
-  "total_requests": 57
-}
-📁 Project Structure
+## 🏗️ Project Structure
+
+```
 genai-text-analyzer/
-├── app/
-│   ├── main.py              # FastAPI application entry point
-│   ├── models.py            # Pydantic models for request/response
-│   ├── services.py          # OpenAI integration service
-│   └── cache.py             # Redis caching layer
-├── tests/                   # Test suite
-├── SOURCE.md                #AI learning journal and prompts
-├── Dockerfile              # Container configuration
-├── docker-compose.yml      # Multi-service orchestration
-├── requirements.txt        # Python dependencies
-├── .env.example           # Environment variables template
-├── .gitignore            # Git ignore rules
-└── README.md             # Project documentation
+├── app.py                 # FastAPI application with endpoints
+├── Dockerfile            # Container configuration
+├── docker-compose.yml    # Local development setup
+├── requirements.txt      # Python dependencies
+├── .env.example         # Environment variables template
+├── .env                 # Your API keys (do not commit!)
+└── README.md           # This file
+```
 
-🌐 Deployment
-Render (Production)
-# Auto-deploys from main branch
-# Live at: https://genai-text-analyzer.onrender.com
-Railway Deployment
-Fork this repository
+## 🛠️ Local Development (Without Docker)
 
-Go to Railway
+### 1. Create Virtual Environment
 
-Create New Project → Connect GitHub repository
+```bash
+python -m venv venv
 
-Add environment variable: OPENAI_API_KEY
+# On Windows
+venv\Scripts\activate
 
-Deploy - Railway auto-detects the Dockerfile
+# On macOS/Linux
+source venv/bin/activate
+```
 
-Render Deployment
-Fork this repository
+### 2. Install Dependencies
 
-Go to Render
+```bash
+pip install -r requirements.txt
+```
 
-Create New Web Service
+### 3. Set Environment Variable
 
-Connect your GitHub repository
+```bash
+# On Windows (CMD)
+set OPENAI_API_KEY=your_key_here
 
-Add environment variable: OPENAI_API_KEY
+# On Windows (PowerShell)
+$env:OPENAI_API_KEY="your_key_here"
 
-Deploy the service
+# On macOS/Linux
+export OPENAI_API_KEY=your_key_here
+```
 
-🛠️ Development
-Running Tests
-# Run the test suite
-pytest tests/ -v
+### 4. Run the Server
 
-# Run with coverage report
-pytest --cov=app tests/
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
 
-# Run specific test file
-pytest tests/test_api.py -v
-Code Quality
-# Format code
-black app/ tests/
+## ☁️ Deployment Options
 
-# Lint code
-flake8 app/ tests/
+### Deploy to Railway
 
-# Type checking
-mypy app/
+1. Fork this repository
+2. Go to [Railway](https://railway.app/)
+3. Click "New Project" → "Deploy from GitHub"
+4. Select your forked repository
+5. Add environment variable: `OPENAI_API_KEY`
+6. Deploy!
 
-Building for Production
-# Build Docker image
-docker build -t genai-text-analyzer .
+### Deploy to Render
 
-# Run production container
-docker run -p 8000:8000 -e OPENAI_API_KEY=your_key_here genai-text-analyzer
-⚙️ Configuration
-Environment Variables:
-OPENAI_API_KEY=your_openai_key_here
-REDIS_URL=redis://localhost:6379
-RATE_LIMIT=100/DAY
-🧪 Testing
-# Run all tests
-pytest tests/ -v
+1. Fork this repository
+2. Go to [Render](https://render.com/)
+3. Click "New" → "Web Service"
+4. Connect your GitHub repository
+5. Add environment variable: `OPENAI_API_KEY`
+6. Deploy!
 
-# Run with coverage report
-pytest --cov=app --cov-report=html tests/
+## 🧪 Testing the API
 
-# View detailed coverage in browser
-open htmlcov/index.html
-Test Coverage: 39% (focused on core API functionality)
-Tests Passing: 13/13 ✅
+### Using Python Requests
 
-## 🧪 Testing
+```python
+import requests
 
+url = "http://localhost:8000/analyze"
+data = {
+    "text": "FastAPI is an amazing framework for building APIs quickly!"
+}
 
-# Run all tests
-pytest tests/ -v
+response = requests.post(url, json=data)
+print(response.json())
+```
 
-# Run with coverage report
-pytest --cov=app --cov-report=html tests/
+### Using JavaScript Fetch
 
-# View detailed coverage in browser
-open htmlcov/index.html
+```javascript
+fetch('http://localhost:8000/analyze', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    text: 'This API makes text analysis so easy!'
+  })
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
 
-⚠️ Troubleshooting
-Common Issues
-Port 6379 Already in Use
-# Stop existing Redis service
-sudo systemctl stop redis-server
+## 📊 Example Use Cases
 
-# Or change Redis port in docker-compose.yml
-services:
-  redis:
-    ports:
-      - "6380:6379"  # Use different host port
-      OpenAI API Key Issues
-      # Verify environment variable is set
-echo $OPENAI_API_KEY
+1. **Customer Feedback Analysis** - Analyze customer reviews to understand sentiment
+2. **Social Media Monitoring** - Track brand sentiment across social platforms
+3. **Content Summarization** - Generate summaries for long articles or documents
+4. **Email Triage** - Automatically categorize and prioritize emails
+5. **Market Research** - Extract key insights from survey responses
 
-# For Docker, ensure .env file exists
-docker-compose down
-docker-compose up --build
-Docker Build Failures
-Rate Limit Exceeded
+## 🔧 Configuration
 
-Wait 1 minute and retry
+### Environment Variables
 
-Implement exponential backoff in your client
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | Your OpenAI API key | Yes |
 
-Consider upgrading OpenAI plan
+### API Parameters
 
-🤝 Contributing
-We welcome contributions! Please see our Contributing Guide for details.
+The `/analyze` endpoint accepts:
+- **text** (string, required): The text to analyze (max 4000 characters)
 
-Development Workflow
-Fork the repository
+## 📚 Technologies Used
 
-Create a feature branch (git checkout -b feature/amazing-feature)
+- **[FastAPI](https://fastapi.tiangolo.com/)** - Modern, fast web framework for building APIs
+- **[OpenAI GPT-3.5 Turbo](https://platform.openai.com/)** - State-of-the-art language model
+- **[Docker](https://www.docker.com/)** - Containerization platform
+- **[Uvicorn](https://www.uvicorn.org/)** - Lightning-fast ASGI server
+- **[Pydantic](https://pydantic-docs.helpmanual.io/)** - Data validation using Python type hints
 
-Commit changes (git commit -m 'Add amazing feature')
+## 🤝 Contributing
 
-Push to branch (git push origin feature/amazing-feature)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Open a Pull Request
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Code Standards
-Follow PEP 8 style guide
+## 📄 License
 
-Include type hints for new functions
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Add tests for new features
+## 👨‍💻 Author
 
-Update documentation accordingly
+**MAUREEN KARIMI**
+- GitHub: [@Mkikii](https://github.com/Mkikii)
+- Project Link: [https://github.com/Mkikii/genai-text-analyzer](https://github.com/Mkikii/genai-text-analyzer)
 
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 🙏 Acknowledgments
 
-👨‍💻 Author
-Maureen Karimi
+- [Moringa School](https://moringaschool.com/) for the AI Capstone Project framework
+- [OpenAI](https://openai.com/) for providing the GPT API
+- [FastAPI](https://fastapi.tiangolo.com/) community for excellent documentation
 
-GitHub: @Mkikii
+## 📞 Support
 
-Project: GenAI Text Analyzer
+If you have any questions or run into issues, please open an issue on GitHub or contact the maintainer.
 
-🙏 Acknowledgments
-Moringa School - AI Capstone Project framework
-
-OpenAI - GPT models and API infrastructure
-
-FastAPI - Excellent documentation and community
-
-Render - Deployment platform
+---
